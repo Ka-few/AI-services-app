@@ -21,7 +21,7 @@ class Bull(db.Model, SerializerMixin):
     price = db.Column(db.Float, nullable=False)
 
     # Relationship with order-bull join
-    order_items = db.relationship("OrderBull", back_populates="bull")
+    order_items = db.relationship("OrderBull", back_populates="bull", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Bull {self.name} - {self.breed}, Qty: {self.semen_quantity}>"
@@ -56,7 +56,7 @@ class Order(db.Model, SerializerMixin):
     vet = db.relationship("Vet", back_populates="orders")
 
     # Relationship with order-bull join
-    order_items = db.relationship("OrderBull", back_populates="order")
+    order_items = db.relationship("OrderBull", back_populates="order", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Order {self.id} - {self.customer_name}>"
@@ -84,6 +84,36 @@ class Order(db.Model, SerializerMixin):
     def complete_order(self):
         if self.status == "confirmed":
             self.status = "completed"
+            
+    def to_dict(self):
+        data = super().to_dict()
+        # Include order items with nested bull
+        data["order_items"] = [
+            {
+                "order_id": item.order_id,
+                "bull_id": item.bull_id,
+                "quantity": item.quantity,
+                "price_at_order": item.price_at_order,
+                "bull": {
+                    "id": item.bull.id,
+                    "name": item.bull.name,
+                    "breed": item.bull.breed,
+                    "price": item.bull.price,
+                    "semen_quantity": item.bull.semen_quantity,
+                    "image_url": item.bull.image_url
+                } if item.bull else None
+            }
+            for item in self.order_items
+        ]
+        # Include vet info if exists
+        data["vet"] = {
+            "id": self.vet.id,
+            "name": self.vet.name,
+            "phone": self.vet.phone,
+            "email": self.vet.email,
+            "location": self.vet.location
+        } if self.vet else None
+        return data
 
 
 class OrderBull(db.Model, SerializerMixin):

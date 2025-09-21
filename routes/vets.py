@@ -1,15 +1,24 @@
 from flask_restful import Resource
-from flask import request, make_response
+from flask import request
 from extensions import db
 from models import Vet
 
 class Vets(Resource):
     def get(self):
         vets = Vet.query.all()
-        return make_response([v.to_dict() for v in vets], 200)
+        return [v.to_dict() for v in vets], 200
 
     def post(self):
         data = request.get_json()
+
+        # Validation
+        if not data.get("name") or not data.get("email"):
+            return {"error": "Name and email are required"}, 400
+
+        existing_vet = Vet.query.filter_by(email=data.get("email")).first()
+        if existing_vet:
+            return {"error": "Email already exists"}, 400
+        
         new_vet = Vet(
             name=data.get("name"),
             location=data.get("location"),
@@ -18,19 +27,20 @@ class Vets(Resource):
         )
         db.session.add(new_vet)
         db.session.commit()
-        return make_response(new_vet.to_dict(), 201)
+        return new_vet.to_dict(), 201
+
 
 class VetByID(Resource):
     def get(self, vet_id):
         vet = Vet.query.get(vet_id)
         if vet:
-            return make_response(vet.to_dict(), 200)
-        return make_response({"error": "Vet not found"}, 404)
+            return vet.to_dict(), 200
+        return {"error": "Vet not found"}, 404
 
     def put(self, vet_id):
         vet = Vet.query.get(vet_id)
         if not vet:
-            return make_response({"error": "Vet not found"}, 404)
+            return {"error": "Vet not found"}, 404
 
         data = request.get_json()
         vet.name = data.get("name", vet.name)
@@ -39,13 +49,13 @@ class VetByID(Resource):
         vet.email = data.get("email", vet.email)
 
         db.session.commit()
-        return make_response(vet.to_dict(), 200)
+        return vet.to_dict(), 200
 
     def delete(self, vet_id):
         vet = Vet.query.get(vet_id)
         if not vet:
-            return make_response({"error": "Vet not found"}, 404)
+            return {"error": "Vet not found"}, 404
 
         db.session.delete(vet)
         db.session.commit()
-        return make_response({}, 204)
+        return {"message": "Vet deleted successfully"}, 200

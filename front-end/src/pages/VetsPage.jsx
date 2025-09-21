@@ -1,11 +1,11 @@
-import React from 'react'
+import React from "react";
+import VetList from "../components/VetList";
 
-function VetsPage() {
+export default function VetsPage() {
   return (
     <div>
-      
+      <h1 style={{ textAlign: "center" }}>Vets List</h1>
+      <VetList />
     </div>
-  )
+  );
 }
-
-export default VetsPage

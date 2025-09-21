@@ -1,5 +1,5 @@
 from flask_restful import Resource
-from flask import request, make_response
+from flask import request
 from extensions import db
 from models import Bull
 
@@ -34,7 +34,7 @@ class BullByID(Resource):
         if not bull:
             return {"error": "Bull not found"}, 404
 
-        data = request.get_json()
+        data = request.get_json() or {}
         bull.name = data.get("name", bull.name)
         bull.breed = data.get("breed", bull.breed)
         bull.age = data.get("age", bull.age)
@@ -47,8 +47,8 @@ class BullByID(Resource):
     def delete(self, bull_id):
         bull = Bull.query.get(bull_id)
         if not bull:
-            return make_response({"error": "Bull not found"}, 404)
+            return {"error": "Bull not found"}, 404
 
         db.session.delete(bull)
         db.session.commit()
-        return make_response({}, 204)
+        return {}, 204
